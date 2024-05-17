@@ -1,5 +1,6 @@
 from ftplib import FTP
 from configparser import ConfigParser
+import schedule
 
 
 def download_file(remote_file_name, local_file_path):
@@ -17,36 +18,9 @@ def download_file(remote_file_name, local_file_path):
         print(f"An error occurred: {str(e)}")
 
 
-def upload_file(local_file_path, remote_file_name):
-    try:
-        ftp = FTP()
-        ftp.connect(FTP_IP, FTP_PORT)
-        ftp.login(user=FTP_USER, passwd=FTP_PASSWORD)
-
-        with open(local_file_path, "rb") as file:
-            ftp.storbinary("STOR " + remote_file_name, file)
-
-        ftp.quit()
-        print("File uploaded successfully.")
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-
-
-def list_files():
-    try:
-        ftp = FTP()
-        ftp.connect(FTP_IP, FTP_PORT)
-        ftp.login(user=FTP_USER, passwd=FTP_PASSWORD)
-
-        files = ftp.nlst()
-
-        ftp.quit()
-
-        print("List of files on the server:")
-        for file in files:
-            print(file)
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
+def main():
+    download_file(data_file_name, data_local_file_path)
+    download_file(reviews_file_name, reviews_local_file_path)
 
 
 if __name__ == "__main__":
@@ -58,8 +32,17 @@ if __name__ == "__main__":
     FTP_USER = config.get("SERVER", "user")
     FTP_PASSWORD = config.get("SERVER", "password")
 
-    data_file_name = config.get("SERVER", "data_file_name")
-    reviews_file_name = config.get("SERVER", "reviews_file_name")
+    data_file_name = config.get("PATH", "data_file_name")
+    reviews_file_name = config.get("PATH", "reviews_file_name")
+    data_local_file_path = config.get("PATH", "data_local_file_path")
+    reviews_local_file_path = config.get("PATH", "reviews_local_file_path")
 
-    download_file(data_file_name, data_file_name)
-    download_file(reviews_file_name, reviews_file_name)
+    run_time = config.get("RUN OPTIONS", "run_time")
+
+    if config.getboolean("RUN OPTIONS", "run_on_start"):
+        main()
+
+    if config.getboolean("RUN OPTIONS", "run_schedule"):
+        schedule.every(1).day.at(run_time).do(main)
+        while True:
+            schedule.run_pending()
